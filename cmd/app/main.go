@@ -17,10 +17,11 @@ import (
 )
 
 func main() {
+	cfg, err := config.Load()
 	tempLogger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	cfg := config.Load(tempLogger)
-	if err := cfg.Validate(); err != nil {
-		tempLogger.Error("invalid config", "err", err)
+
+	if err != nil {
+		tempLogger.Error("failed to load config", "err", err)
 		os.Exit(1)
 	}
 
@@ -29,7 +30,11 @@ func main() {
 
 	client.OnAfterResponse(func(c *resty.Client, resp *resty.Response) error {
 		log := resp.Request.Context().Value("logger").(*slog.Logger)
-		log.Info("Resty request completed", "status", resp.StatusCode(), "url", resp.Request.URL)
+		log.Info("resty request completed",
+			"status", resp.StatusCode(),
+			"url", resp.Request.URL,
+			"duration", resp.Time(),
+		)
 		return nil
 	})
 
@@ -46,22 +51,22 @@ func main() {
 	signal.Notify(quit, syscall.SIGTERM, os.Interrupt)
 
 	go func() {
-		logger.Info("Server is starting", "addr", server.Addr)
+		logger.Info("server is starting", "addr", server.Addr)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("Server error", "err", err)
+			logger.Error("server error", "err", err)
 			os.Exit(1)
 		}
 	}()
 
 	<-quit
-	logger.Info("Graceful shutdown initiated")
+	logger.Info("graceful shutdown initiated")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		logger.Error("Shutdown error", "err", err)
+		logger.Error("shutdown error", "err", err)
 	} else {
-		logger.Info("Server gracefully stopped")
+		logger.Info("server gracefully stopped")
 	}
 }

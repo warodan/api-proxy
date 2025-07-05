@@ -1,11 +1,10 @@
 package config
 
 import (
-	"errors"
+	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
-	"log/slog"
 	"os"
 )
 
@@ -18,30 +17,28 @@ func (cfg *Config) Validate() error {
 	return validator.New().Struct(cfg)
 }
 
-func Load(tempLogger *slog.Logger) *Config {
+func Load() (*Config, error) {
 	config := &Config{}
 
 	data, err := os.ReadFile("config.yaml")
 	if err == nil {
-		if yamlErr := yaml.Unmarshal(data, config); yamlErr != nil {
-			panic("YAML parsing error: " + yamlErr.Error())
+		if err := yaml.Unmarshal(data, config); err != nil {
+			return nil, fmt.Errorf("failed to parse yaml: %w", err)
 		}
 	}
 
-	if err := godotenv.Load(); err != nil {
-		tempLogger.Error("No .env file found, using system env vars")
+	_ = godotenv.Load()
+
+	if val := os.Getenv("PORT"); val != "" {
+		config.Port = val
+	}
+	if val := os.Getenv("LOGGER_LEVEL"); val != "" {
+		config.LoggerLevel = val
 	}
 
-	if port := os.Getenv("PORT"); port != "" {
-		config.Port = port
-	}
-	if level := os.Getenv("LOGGER_LEVEL"); level != "" {
-		config.LoggerLevel = level
+	if err := config.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
-	if config.Port == "" || config.LoggerLevel == "" {
-		panic(errors.New("config is incomplete: port or loggerLevel missing"))
-	}
-
-	return config
+	return config, nil
 }
