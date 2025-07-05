@@ -1,10 +1,12 @@
 package main
 
 import (
+	"api-proxy/internal/config"
 	"api-proxy/internal/handler"
 	"api-proxy/internal/logger"
 	"api-proxy/internal/middleware"
 	"context"
+	"errors"
 	"github.com/go-resty/resty/v2"
 	"log/slog"
 	"net/http"
@@ -15,7 +17,14 @@ import (
 )
 
 func main() {
-	logger := logger.New()
+	tempLogger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	cfg := config.Load(tempLogger)
+	if err := cfg.Validate(); err != nil {
+		tempLogger.Error("invalid config", "err", err)
+		os.Exit(1)
+	}
+
+	logger := logger.New(cfg)
 	client := resty.New()
 
 	client.OnAfterResponse(func(c *resty.Client, resp *resty.Response) error {
@@ -29,7 +38,7 @@ func main() {
 	mux.HandleFunc("/posts/", postHandler.ProxyPost)
 
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":" + cfg.Port,
 		Handler: middleware.InjectLoggerMiddleware(logger)(mux),
 	}
 
@@ -38,7 +47,7 @@ func main() {
 
 	go func() {
 		logger.Info("Server is starting", "addr", server.Addr)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("Server error", "err", err)
 			os.Exit(1)
 		}
