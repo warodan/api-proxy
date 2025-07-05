@@ -1,0 +1,31 @@
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Compiled binaries
+bin/
+build/
+dist/
+
+# Temporary files
+*.log
+/tmp/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+
+# Environment variables file
+.env
+
+# Swagger auto-generated files
+docs/docs.go
