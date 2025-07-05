@@ -26,10 +26,11 @@ func main() {
 	}
 
 	logger := logger.New(cfg)
+	slog.SetDefault(logger)
 	client := resty.New()
 
 	client.OnAfterResponse(func(c *resty.Client, resp *resty.Response) error {
-		log := resp.Request.Context().Value("logger").(*slog.Logger)
+		log := middleware.LoggerFromContext(resp.Request.Context())
 		log.Info("resty request completed",
 			"status", resp.StatusCode(),
 			"url", resp.Request.URL,

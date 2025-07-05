@@ -1,8 +1,8 @@
 package handler
 
 import (
+	"api-proxy/internal/middleware"
 	"github.com/go-resty/resty/v2"
-	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -16,7 +16,7 @@ func NewPostHandler(client *resty.Client) *PostHandler {
 }
 
 func (handler *PostHandler) ProxyPost(writer http.ResponseWriter, req *http.Request) {
-	logger := req.Context().Value("logger").(*slog.Logger)
+	logger := middleware.LoggerFromContext(req.Context())
 
 	id := strings.TrimPrefix(req.URL.Path, "/posts/")
 

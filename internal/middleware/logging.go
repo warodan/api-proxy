@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+type ctxKeyLogger struct{}
+
 func InjectLoggerMiddleware(baseLogger *slog.Logger) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
@@ -19,7 +21,7 @@ func InjectLoggerMiddleware(baseLogger *slog.Logger) func(handler http.Handler) 
 				slog.String("method", req.Method),
 				slog.String("path", req.URL.Path),
 			)
-			ctx := context.WithValue(req.Context(), "logger", reqLogger)
+			ctx := context.WithValue(req.Context(), ctxKeyLogger{}, reqLogger)
 
 			next.ServeHTTP(writer, req.WithContext(ctx))
 
@@ -27,4 +29,12 @@ func InjectLoggerMiddleware(baseLogger *slog.Logger) func(handler http.Handler) 
 			reqLogger.Info("request completed", slog.Duration("duration", duration))
 		})
 	}
+}
+
+func LoggerFromContext(ctx context.Context) *slog.Logger {
+	logger, ok := ctx.Value(ctxKeyLogger{}).(*slog.Logger)
+	if !ok {
+		return slog.Default()
+	}
+	return logger
 }
