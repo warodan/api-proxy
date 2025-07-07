@@ -12,6 +12,7 @@ func New(cfg *config.Config) *slog.Logger {
 	switch cfg.LoggerLevel {
 	case "DEBUG":
 		opts.Level = slog.LevelDebug
+		opts.AddSource = true
 	case "WARN":
 		opts.Level = slog.LevelWarn
 	case "ERROR":

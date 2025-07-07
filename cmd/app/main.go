@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"github.com/go-resty/resty/v2"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -18,11 +19,8 @@ import (
 
 func main() {
 	cfg, err := config.Load()
-	tempLogger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-
 	if err != nil {
-		tempLogger.Error("failed to load config", "err", err)
-		os.Exit(1)
+		log.Fatalf("failed to load config: %v", err)
 	}
 
 	logger := logger.New(cfg)
