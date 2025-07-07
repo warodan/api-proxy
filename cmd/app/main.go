@@ -1,13 +1,13 @@
 package main
 
 import (
+	"api-proxy/internal/client"
 	"api-proxy/internal/config"
 	"api-proxy/internal/handler"
 	"api-proxy/internal/logger"
 	"api-proxy/internal/middleware"
 	"context"
 	"errors"
-	"github.com/go-resty/resty/v2"
 	"log"
 	"log/slog"
 	"net/http"
@@ -25,20 +25,11 @@ func main() {
 
 	logger := logger.New(cfg)
 	slog.SetDefault(logger)
-	client := resty.New()
 
-	client.OnAfterResponse(func(c *resty.Client, resp *resty.Response) error {
-		log := middleware.LoggerFromContext(resp.Request.Context())
-		log.Info("resty request completed",
-			"status", resp.StatusCode(),
-			"url", resp.Request.URL,
-			"duration", resp.Time(),
-		)
-		return nil
-	})
+	restyClient := client.NewRestyClient()
 
 	mux := http.NewServeMux()
-	postHandler := handler.NewPostHandler(client)
+	postHandler := handler.NewPostHandler(restyClient)
 	mux.HandleFunc("/posts/", postHandler.ProxyPost)
 
 	server := &http.Server{
