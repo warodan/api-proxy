@@ -23,7 +23,13 @@ func Load() (*Config, error) {
 	var yamlErr error
 	var envLoaded bool
 
-	if data, err := os.ReadFile("config.yaml"); err == nil {
+	path := os.Getenv("CONFIG_PATH")
+	if path == "" {
+		path = "config.yaml"
+	}
+
+	data, err := os.ReadFile(path)
+	if err == nil {
 		if err := yaml.Unmarshal(data, config); err != nil {
 			yamlErr = fmt.Errorf("failed to parse config.yaml: %w", err)
 		}
